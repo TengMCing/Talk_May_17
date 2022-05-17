@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>spotoroo: spatiotemporal clustering in R of hotspot data</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Weihao (Patrick) Li" />
+    <meta name="date" content="2022-05-17" />
+    <script src="Patrick_may_17_talk_files/header-attrs/header-attrs.js"></script>
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+    <link rel="stylesheet" href="mine.css" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+
+
+
+
+
+count: false
+
+&lt;!-- need a backaground image --&gt;
+
+.pull-left-full[
+
+&lt;h1 class="myblue"&gt;spotoroo: spatiotemporal clustering in R of hotspot data&lt;/h1&gt;
+
+
+
+&lt;h4 class="myblue"&gt; Di Cook award presentation &lt;/h3&gt;
+
+
+&lt;br&gt;
+&lt;br&gt;
+
+&lt;h3 class="myblue"&gt; Weihao (Patrick) Li &lt;/h3&gt;
+
+&lt;h4 class="myblue"&gt; Department of Econometrics and Business Statistics, Monash University &lt;/h4&gt;
+
+&lt;h4 class="myblue"&gt; &lt;i class="fa fa-envelope" aria-hidden="true"&gt;&lt;/i&gt; weihao.li@monash.edu &lt;/h4&gt;
+
+&lt;h4 class="myblue"&gt; May 17, 2022 &lt;/h4&gt;
+
+&lt;!-- &lt;h3 class="myblue"&gt; May 17, 2022 &lt;/h3&gt; --&gt;
+]
+
+
+.pull-right-110[
+
+&lt;img src="Patrick_may_17_talk_files/figure-html/unnamed-chunk-2-1.png" width="100%" /&gt;
+
+]
+
+---
+
+# 👨‍🚒 2019-2020 Australian bushfire season 👩‍🚒
+
+.pull-left[
+
+&lt;br&gt;
+&lt;br&gt;
+
+#### A catastrophic and unprecedented disaster.
+
+#### By the end of 2020, 
+
+- almost `\(19\)` million hectares of land burned
+- over `\(3000\)` homes destroyed 
+- AUD $ `\(1.7\)` billion in insurance losses
+- an estimated `\(1\)` billion animals killed
+]
+
+
+.pull-right-center[
+![](images/800px-Werombi_Bushfire.jpg)
+
+.caption[
+Fig. 1: _An out of control bushfire in Werombi, NSW (Wikimedia Commons, 2019)._ 
+]
+]
+
+
+---
+
+# 📡 Remote sensing data
+
+.pull-left[
+
+&lt;img src="Patrick_may_17_talk_files/figure-html/unnamed-chunk-3-1.png" width="100%" /&gt;
+
+.caption[
+Fig. 2: _Himawari-8 hotspot data in Victoria from October 2019 to March 2020._ 
+]
+
+]
+
+.pull-right[
+
+&lt;br&gt;
+&lt;br&gt;
+
+#### **Remote satellite data** provides a potential solution to the challenge of active fire detection and monitoring.
+
+#### Japan Aerospace Exploration Agency (JAXA) **Himawari-8 satellite** wildfire product:
+- `\(1989572\)` hotspots in Australia from October 2019 to March 2020 
+- `\(0.02^\circ\)` (~ `\(2\)` kms) spatial grid resolution
+- `\(10\)` minutes temporal resolution
+
+]
+
+---
+
+# 👨‍💻 Authors of `spotoroo` 👩‍💻
+
+The clustering algorithm was developed in 2019, and made available in the `spotoroo` package in March, 2021.
+
+```r
+install.packages("spotoroo")
+library(spotoroo)
+```
+
+&lt;br&gt;
+
+- Author, maintainer: **Weihao (Patrick) Li**
+
+- Contributor: **Prof. Di Cook**
+  - Professor of Business Analytics at Monash University.
+
+- Contributor: **Emily Dodwell**
+  - Principal Inventive Scientist at AT&amp;T.
+
+---
+
+# 1️⃣ Divide hotspots into intervals
+
+#### `activeTime`: the maximum amount of time a fire may stay smoldering but undetectable by satellite before flaring up again
+
+#### Assumes the hour index start from `\(1\)`.
+
+$$
+`\begin{align*}
+S_1 &amp;= \text{hotspots observed from hour}~1~\text{to hour}~1\\
+S_2 &amp;= \text{hotspots observed from hour}~1~\text{to hour}~2\\
+\vdots\\
+S_{activeTime} &amp;= \text{hotspots observed from hour}~1~\text{to hour}~activeTime\\
+S_{activeTime+1} &amp;= \text{hotspots observed from hour}~2~\text{to hour}~activeTime+1\\
+\vdots\\
+S_{T} &amp;= \text{hotspots observed from hour}~T-activeTime~\text{to hour}~T\\
+\end{align*}`
+$$
+
+
+In summary, data will be divided into `\(T\)` intervals
+
+`$$S_t = [max(1,t-activeTime),t]\quad t = 1,2,...,T.$$`
+
+---
+
+# 2️⃣ Cluster hotspots spatially within each time interval
+
+.pull-left[
+
+&lt;br&gt;
+&lt;br&gt;
+&lt;br&gt;
+
+#### For each time interval `\(S_t\)`, connect all hotspots within `adjDist` to form a graph
+
+#### Every **connected component** of the graph is an individual cluster
+
+
+
+
+]
+
+
+
+.pull-right[
+
+&lt;img src="Patrick_may_17_talk_files/figure-html/unnamed-chunk-4-1.png" width="100%" /&gt;
+
+]
+
+
+---
+
+# 3️⃣ Update memberships for hotspots
+
+
+
+
+
+
+
+
+
+
+
+#### Some hotspots in `\(S_t\)` have been clustered in `\(S_{t-1}\)`
+
+#### Update the membership by finding the nearest label
+
+&lt;br&gt;
+
+&lt;div style="width: 80%; margin: auto;"&gt;
+
+&lt;img src="Patrick_may_17_talk_files/figure-html/unnamed-chunk-8-1.png" width="100%" /&gt;
+
+
+
+&lt;/div&gt;
+
+
+---
+
+# 4️⃣ Handle noise in the clustering result
+
+&lt;br&gt;
+&lt;br&gt;
+&lt;br&gt;
+
+- `minPts`: the minimum number of hotspots in a cluster
+- `minTime`: the minimum time a cluster can exist and still be considered a bushfire
+
+&lt;br&gt;
+&lt;br&gt;
+
+#### Any cluster that does not satisfy these two conditions will be reassigned membership label `\(-1\)` to indicate they represent noise.
+
+
+---
+
+# ⚙️ Usage
+
+```r
+result &lt;- hotspot_cluster(hotspots,
+                          activeTime = 24,
+                          adjDist = 3000,
+                          minPts = 4,
+                          minTime = 3,
+                          timeUnit = "h",
+                          timeStep = 1)
+```
+
+
+.font-05[
+
+```
+───────────────────────────────────── SPOTOROO 0.1.2 ─────────────────────────────────────
+
+── Calling Core Function : `hotspot_cluster()` ──
+
+── "1" time index = 1 hour 
+✓ Transform observed time → time indexes
+ℹ 4313 time indexes found
+
+── activeTime = 24 time indexes | adjDist = 3000 meters 
+✓ Cluster                                                                               
+ℹ 1055 clusters found (including noise)
+
+── minPts = 4 hot spots | minTime = 3 time indexes 
+✓ Handle noise
+ℹ 407 clusters left
+ℹ noise proportion : 4.342 %
+
+── ignitionCenter = "mean" 
+✓ Compute ignition points for clusters
+ℹ average hot spots : 178.5
+ℹ average duration : 43.4 hours
+
+── Time taken = 5 mins 36 secs for 75936 hot spots 
+ℹ 0.004 secs per hot spot
+
+───────────────────────────────────────────────────────────────────────────────
+```
+
+]
+
+---
+
+# 📖 Summary of the clustering result
+
+```r
+summary(result)
+```
+
+.high-pre[
+
+```
+───────────────────────────────────── SPOTOROO 0.1.2 ─────────────────────────────────────
+
+── Calling Core Function : `summary_spotoroo()` ──
+
+CLUSTERS: ALL
+OBSERVATIONS: 75936
+FROM: 2019-10-01 03:20:00
+TO:   2020-03-28 19:40:00
+
+
+── Clusters 
+ℹ Number of clusters: 407
+
+Observations in cluster
+        Min.     1st Qu.        Mean     3rd Qu.        Max.
+         4.0        17.0       178.5       159.0      3863.0
+Duration of cluster (hours)
+        Min.     1st Qu.        Mean     3rd Qu.        Max.
+         2.3         9.7        43.4        63.4       285.5
+
+── Hot spots (excluding noise) 
+ℹ Number of hot spots: 72639
+
+Distance to ignition points (m)
+        Min.     1st Qu.        Mean     3rd Qu.        Max.
+         0.0      2844.5      7615.0      9649.2     40112.3
+Time from ignition (hours)
+        Min.     1st Qu.        Mean     3rd Qu.        Max.
+         0.0        17.8        50.7        73.5       285.5
+
+── Noise 
+ℹ Number of noise points: 3297 (4.34 %)
+
+
+──────────────────────────────────────────────────────────────────────────────────────────
+```
+
+]
+
+---
+
+# 📊 Visualizing the clustering result
+
+.pull-left[
+
+&lt;h4 style="margin-top:0;"&gt;Spatial distribution of clusters&lt;/h4&gt;
+
+
+```r
+plot(result, bg = plot_vic_map(), 
+     cluster = c(58, 83, 129, 163))
+```
+
+&lt;img src="Patrick_may_17_talk_files/figure-html/unnamed-chunk-9-1.png" width="100%" /&gt;
+
+]
+
+.pull-right[
+
+
+&lt;h4 style="margin-top:0;"&gt;Fire movement plot&lt;/h4&gt;
+
+```r
+plot(result, type = "mov", step = 12, 
+     cluster = c(58, 83, 129, 163))
+```
+&lt;img src="Patrick_may_17_talk_files/figure-html/unnamed-chunk-10-1.png" width="100%" /&gt;
+
+
+]
+
+---
+
+# 📊 Visualizing the clustering result
+
+#### Timeline plot
+
+
+.center-div[
+
+
+```r
+plot(result, type = "timeline")
+```
+
+&lt;img src="Patrick_may_17_talk_files/figure-html/unnamed-chunk-11-1.png" width="100%" /&gt;
+
+]
+
+---
+
+class: center, middle
+
+# Thanks!
+
+---
+
+# Bibliography
+
+Wikimedia Commons (2019). "Werombi Bushfire". [https://commons.wikimedia.org/wiki/File:Werombi_Bushfire.jpg](https://commons.wikimedia.org/wiki/File:Werombi_Bushfire.jpg)
+
+Li, W., Dodwell, E., &amp; Cook, D. (2021). A Clustering Algorithm to Organize Satellite Hotspot Data for the Purpose of Tracking Bushfires Remotely. https://github.com/TengMCing/Hotspots-Clustering-Algorithm/blob/master/li-dodwell-cook/RJwrapper.pdf
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="scripts/my_macro.js"></script>
+<script>var slideshow = remark.create({
+"countIncrementalSlides": false,
+"slideNumberFormat": "%current%/%total%",
+"highlightStyle": "github",
+"highlightLines": true,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+(function(time) {
+  var d2 = function(number) {
+    return ('0' + number).slice(-2); // left-pad 0 to minutes/seconds
+  },
+
+  time_format = function(total) {
+    var secs = Math.abs(total) / 1000;
+    var h = Math.floor(secs / 3600);
+    var m = Math.floor(secs % 3600 / 60);
+    var s = Math.round(secs % 60);
+    var res = d2(m) + ':' + d2(s);
+    if (h > 0) res = h + ':' + res;
+    return res;  // [hh:]mm:ss
+  },
+
+  slide_number_div = function(i) {
+    return document.getElementsByClassName('remark-slide-number').item(i);
+  },
+
+  current_page_number = function(i) {
+    return slide_number_div(i).firstChild.textContent;  // text "i / N"
+  };
+
+  var timer = document.createElement('span'); timer.id = 'slide-time-left';
+  var time_left = time, k = slideshow.getCurrentSlideIndex(),
+      last_page_number = current_page_number(k);
+
+  setInterval(function() {
+    time_left = time_left - 1000;
+    timer.innerHTML = ' ' + time_format(time_left);
+    if (time_left < 0) timer.style.color = 'red';
+  }, 1000);
+
+  slide_number_div(k).appendChild(timer);
+
+  slideshow.on('showSlide', function(slide) {
+    var i = slide.getSlideIndex(), n = current_page_number(i);
+    // reset timer when a new slide is shown and the page number is changed
+    if (last_page_number !== n) {
+      time_left = time; last_page_number = n;
+      timer.innerHTML = ' ' + time_format(time); timer.style.color = null;
+    }
+    slide_number_div(i).appendChild(timer);
+  });
+})(55000);
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

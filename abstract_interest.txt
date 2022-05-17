@@ -1,0 +1,7 @@
+2. A short abstract of your project.
+
+Spotoroo is an open-source R package which offers a spatiotemporal clustering algorithm to organise satellite hotspot data for the purpose of tracking bushfires remotely. This work is motivated by the catastrophic bushfires in Australia throughout the summer of 2019-2020 and made possible with the availability of satellite hotspots data. The algorithm is inspired by two existing spatiotemporal clustering algorithms but makes enhancements to cluster points spatially in conjunction with their movement across consecutive time periods, and allows for the adjustment of key parameters if required, for different locations and satellite data sources. 
+
+3. A one-paragraph autobiography. (What are you currently doing, your research interests, etc.)
+
+I am a second-year PhD student in the department of Econometrics and Business Analytics, Monash University.  
